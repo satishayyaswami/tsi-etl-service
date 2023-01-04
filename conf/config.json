@@ -1,0 +1,35 @@
+{
+  "db-url": "jdbc:mysql://localhost:3306/sindhuja_bi?allowLoadLocalInfile=true",
+  "db-user": "root",
+  "db-pass": "India2050",
+  "raw-data-dir": "C:/tmp/sample-data",
+  "data-dictionary-dir": "C:/work/sindhuja-bi/dd",
+  "logs-dir": "C:/work/sindhuja-bi/logs",
+  "stage-load-tasks": [
+    {
+      "file-name": "od.csv",
+      "table-name": "stage_od"
+    },
+    {
+      "file-name":"cad.csv",
+      "table-name": "stage_cad"
+    }
+  ],
+  "ods-load-tasks": [
+    {
+      "table-name": "ods_od",
+      "strategy": "FULL_LOAD",
+      "sql": "insert into ods_od (account_number,disbursement_date,telephone,purpose,purpose_category,fund_source,principal_outstanding,interest_outstanding) select account_number,STR_TO_DATE(disbursement_date,\"%d-%M-%Y\"),telephone,purpose,purpose_category,fund_source,principal_outstanding,interest_outstanding from stage_od"
+    }
+  ],
+  "datamarts": [
+    {
+      "dm-table-name": "dm_purpose_wise_od",
+      "dm-desc": "Purpose wise OD Breakup",
+      "dm-schema": "create table dm_purpose_wise_od (purpose_category varchar(99) not null,count integer not null,principal_outstanding decimal not null,interest_outstanding decimal not null)",
+      "dm-impl-strategy": "SQL",
+      "dm-sql": "insert into dm_purpose_wise_od (purpose_category,count,principal_outstanding,interest_outstanding) select purpose_category,count(*),round(sum(principal_outstanding),2),round(sum(interest_outstanding),2) from ods_od group by purpose_category"
+    }
+  ]
+
+}

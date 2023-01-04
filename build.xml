@@ -1,0 +1,45 @@
+<?xml version="1.0" ?> 
+<project name="Sindhuja_BI" default="build">
+
+	<path id="compile.classpath">
+		<fileset dir="lib">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+	
+	<target name="init" depends="clean">
+		<mkdir dir="build/classes"/>
+		<mkdir dir="dist" />
+		<mkdir dir="logs" />
+	</target>
+	
+	<target name="compile" depends="init" >
+		<javac destdir="build/classes" debug="true" srcdir="src">
+		   <classpath refid="compile.classpath"/>
+		</javac>
+		<jar destfile = "dist/sindhuja_bi.jar"
+		     basedir = "build/classes">
+			<manifest>
+				<attribute name="Main-Class" value="com.sindhujamicrocredit.etl.ETLManager" />
+			</manifest>
+			<zipgroupfileset dir="lib" includes="**/*.jar" />
+		</jar>
+	</target>
+	
+	<target name="build" depends="compile">
+	</target>
+
+	<target name="etl" description="ETL Runner" depends="build">
+		<exec executable="java">
+			<arg line="-jar dist/sindhuja_bi.jar" />
+			<arg line="${basedir}/conf" />
+		</exec>
+	</target>
+	
+	<target name="clean">
+		<delete dir="dist" />
+		<delete dir="build" />
+		<delete dir="logs" />
+	</target>
+	
+</project>

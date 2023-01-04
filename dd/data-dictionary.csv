@@ -1,0 +1,9 @@
+table_name|field_name|description|data_type|char_length|acceptable_value|required|accept_null_value
+ods_od|account_number|Account Number|varchar|99|number|1|0
+ods_od|disbursement_date|Disbursement Date|date|20|date|1|0
+ods_od|telephone|Contact Number|varchar|10|number|1|0
+ods_od|fund_source|Fund Source|varchar|99|varchar|1|0
+ods_od|purpose_category|Purpose Category|varchar|99|varchar|1|0
+ods_od|purpose|Loan Purpose|varchar|99|varchar|1|0
+ods_od|principal_outstanding|Principal Outstanding|varchar|20|number|1|0
+ods_od|interest_outstanding|Interest Outstanding|varchar|20|number|1|0
