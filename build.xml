@@ -1,5 +1,5 @@
 <?xml version="1.0" ?> 
-<project name="Sindhuja_BI" default="build">
+<project name="TSI_ETL_Framework" default="build">
 
 	<path id="compile.classpath">
 		<fileset dir="lib">
@@ -17,10 +17,10 @@
 		<javac destdir="build/classes" debug="true" srcdir="src">
 		   <classpath refid="compile.classpath"/>
 		</javac>
-		<jar destfile = "dist/sindhuja_bi.jar"
+		<jar destfile = "dist/tsi-etl.jar"
 		     basedir = "build/classes">
 			<manifest>
-				<attribute name="Main-Class" value="com.sindhujamicrocredit.etl.ETLManager" />
+				<attribute name="Main-Class" value="in.tsiconsulting.accelerator.etl.ETLManager" />
 			</manifest>
 			<zipgroupfileset dir="lib" includes="**/*.jar" />
 		</jar>
@@ -31,7 +31,7 @@
 
 	<target name="etl" description="ETL Runner" depends="build">
 		<exec executable="java">
-			<arg line="-jar dist/sindhuja_bi.jar" />
+			<arg line="-jar dist/tsi-etl.jar" />
 			<arg line="${basedir}/conf" />
 		</exec>
 	</target>

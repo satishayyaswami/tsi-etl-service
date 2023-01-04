@@ -1,10 +1,10 @@
 {
-  "db-url": "jdbc:mysql://localhost:3306/sindhuja_bi?allowLoadLocalInfile=true",
+  "db-url": "jdbc:mysql://localhost:3306/tsi_etl_service?allowLoadLocalInfile=true",
   "db-user": "root",
   "db-pass": "India2050",
   "raw-data-dir": "C:/tmp/sample-data",
-  "data-dictionary-dir": "C:/work/sindhuja-bi/dd",
-  "logs-dir": "C:/work/sindhuja-bi/logs",
+  "data-dictionary-dir": "C:/work/tsi_etl_service/dd",
+  "logs-dir": "C:/work/tsi_etl_service/logs",
   "stage-load-tasks": [
     {
       "file-name": "od.csv",
