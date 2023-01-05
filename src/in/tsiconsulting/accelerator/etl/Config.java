@@ -25,7 +25,7 @@ public class Config {
         JSONObject config = null;
         StringBuffer buff = new StringBuffer();
 
-        File file = new File(confDir+"\\"+"config.json");
+        File file = new File(confDir+"/"+"config.json");
         Scanner sc = new Scanner(file);
 
         while (sc.hasNextLine())

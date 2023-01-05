@@ -3,8 +3,8 @@
   "db-user": "root",
   "db-pass": "India2050",
   "raw-data-dir": "C:/tmp/sample-data",
-  "data-dictionary-dir": "C:/work/tsi_etl_service/dd",
-  "logs-dir": "C:/work/tsi_etl_service/logs",
+  "data-dictionary-dir": "C:/work/tsi-etl-service/dd",
+  "logs-dir": "C:/work/tsi-etl-service/logs",
   "stage-load-tasks": [
     {
       "file-name": "od.csv",
