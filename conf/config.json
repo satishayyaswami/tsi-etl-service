@@ -15,6 +15,7 @@
       "table-name": "stage_cad"
     }
   ],
+  "stage-cleanup-tasks": [],
   "ods-load-tasks": [
     {
       "table-name": "ods_od",
@@ -29,7 +30,16 @@
       "dm-schema": "create table dm_purpose_wise_od (purpose_category varchar(99) not null,count integer not null,principal_outstanding decimal not null,interest_outstanding decimal not null)",
       "dm-impl-strategy": "SQL",
       "dm-sql": "insert into dm_purpose_wise_od (purpose_category,count,principal_outstanding,interest_outstanding) select purpose_category,count(*),round(sum(principal_outstanding),2),round(sum(interest_outstanding),2) from ods_od group by purpose_category"
-    }
-  ]
-
+    }],
+  "daily-reports": [
+    {
+      "report-name": "Mgmt Report",
+      "recipients": ["satish@tsiconsulting.in"],
+      "metrics": [
+        {
+          "metric-name": "Purpose-wise OD",
+          "sql": "select * from dm_purpose_wise_od"
+        }
+      ]
+    }]
 }

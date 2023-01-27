@@ -14,7 +14,7 @@ import java.util.Date;
 
 public class ETLManager {
 
-    private static int VARCHAR_LENGTH = 99;
+    private static int VARCHAR_LENGTH = 200;
 
     public static void main(String[] argv) throws Exception {
         String confDir = null;
@@ -26,15 +26,21 @@ public class ETLManager {
 
         confDir = argv[0];
         config = new Config(confDir);
+        System.out.println("Reading Config JSON");
         jsonConfig = config.getConfig();
+        //System.out.println(jsonConfig);
         System.out.println("Preparing Data Dictionary");
         prepareDataDictionary(jsonConfig);
         System.out.println("Loading Stage Tables");
         loadStage(jsonConfig);
+        System.out.println("Cleaning up");
+        doCleanup(jsonConfig);
         System.out.println("Loading Operational Data Store");
         loadODS(jsonConfig);
         System.out.println("Creating Datamarts");
         loadDatamarts(jsonConfig);
+        System.out.println("Generate & Send Reports");
+        executeReports(jsonConfig);
     }
 
     private static void loadDatamarts(JSONObject jsonConfig) throws Exception{
@@ -122,11 +128,107 @@ public class ETLManager {
                 path = jsonConfig.get("raw-data-dir")+"/"+task.get("file-name");
                 tablename = (String) task.get("table-name");
                 createSQL = getStageTableCreateSQL(tablename,path);
-                //System.out.println(createSQL);
+                System.out.println("Loading "+tablename);
                 stmt.executeUpdate("DROP TABLE IF EXISTS "+tablename);
                 stmt.executeUpdate(createSQL);
                 stmt.executeUpdate("LOAD DATA INFILE \"" + path + "\" INTO TABLE "
                                          + tablename + " FIELDS TERMINATED BY '|' LINES TERMINATED BY '\\n' IGNORE 1 LINES");
+            }
+        }finally {
+            if(stmt != null) stmt.close();
+            if(con != null) con.close();
+        }
+    }
+
+    private static void executeReports(JSONObject jsonConfig) throws Exception{
+        Connection con = null;
+        Statement stmt = null;
+        JSONArray reportTasks = null;
+        Iterator<JSONObject> taskIt = null;
+        JSONObject task = null;
+        String sql = null;
+        String reportName = null;
+        JSONArray recipients = null;
+        JSONArray metrics = null;
+        Iterator<JSONObject> metricsIt = null;
+        JSONObject metric = null;
+        String metricName = null;
+        String metricSQL = null;
+        String metricHTML = null;
+        StringBuffer report = null;
+        ResultSet rs = null;
+
+        try {
+            con = DB.getConnection( (String) jsonConfig.get("db-url"),
+                    (String) jsonConfig.get("db-user"),
+                    (String) jsonConfig.get("db-pass"));
+            stmt = con.createStatement();
+
+            reportTasks = (JSONArray) jsonConfig.get("daily-reports");
+            taskIt = reportTasks.iterator();
+            while(taskIt.hasNext()){
+                task = (JSONObject) taskIt.next();
+                reportName =  (String) task.get("report-name");
+                recipients = (JSONArray) task.get("recipients");
+                metrics = (JSONArray) task.get("metrics");
+                System.out.println("Generating "+reportName);
+                metricsIt = metrics.iterator();
+                report = new StringBuffer();
+
+                report.append(" <!doctype html>\n" +
+                        "<html>\n" +
+                        "  <head>\n" +
+                        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n" +
+                        "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n" +
+                        "    <title>Simple Transactional Email</title>\n" +
+                        "    <style>h2{ color: blue;} table, th, td {border: 1px solid black;}</style></head>");
+                report.append("<body><p>");
+                while(metricsIt.hasNext()){
+                    metric = (JSONObject) metricsIt.next();
+                    metricName = (String) metric.get("metric-name");
+                    metricSQL = (String) metric.get("sql");
+                    rs = stmt.executeQuery(metricSQL);
+                    metricHTML = DB.getResultAsHTML(rs);
+                    report.append("<h2>"+metricName+"</h2>"+"\n");
+                    report.append(metricHTML+"\n\n");
+                }
+                report.append("</p></body></html>");
+                //System.out.println(report.toString());
+                Email.sendEmail(reportName,report.toString());
+            }
+        }finally {
+            if(stmt != null) stmt.close();
+            if(con != null) con.close();
+        }
+    }
+
+    private static void doCleanup(JSONObject jsonConfig) throws Exception{
+        Connection con = null;
+        Statement stmt = null;
+        JSONArray cleanupTasks = null;
+        Iterator<JSONObject> taskIt = null;
+        JSONObject task = null;
+        String tablename = null;
+        String cleanupname = null;
+        JSONObject cleanupTask = null;
+        String sql = null;
+
+        try {
+            con = DB.getConnection( (String) jsonConfig.get("db-url"),
+                    (String) jsonConfig.get("db-user"),
+                    (String) jsonConfig.get("db-pass"));
+            stmt = con.createStatement();
+
+            cleanupTasks = (JSONArray) jsonConfig.get("stage-cleanup-tasks");
+            taskIt = cleanupTasks.iterator();
+            while(taskIt.hasNext()){
+                task = (JSONObject) taskIt.next();
+                cleanupname =  (String) task.get("cleanup-name");
+                tablename = (String) task.get("table-name");
+                System.out.println("Cleaning up "+cleanupname + " on "+tablename);
+                sql = (String) task.get("sql");
+                //System.out.println("SQL "+odsLoadSQL);
+                stmt.executeUpdate(sql);
             }
         }finally {
             if(stmt != null) stmt.close();
@@ -139,7 +241,9 @@ public class ETLManager {
         Statement stmt = null;
         String ddpath = null;
         HashMap<String,List> datadictionay = null;
-        Iterator<String> dictionaryIt = null;
+        JSONArray odsTasks = null;
+        Iterator<JSONObject> taskIt = null;
+        JSONObject task = null;
         ArrayList table = null;
         String tablename = null;
         JSONObject odsLoadTask = null;
@@ -156,18 +260,22 @@ public class ETLManager {
             datadictionay = getDataDictionary(con);
 
             // Build ODS Objects
-            dictionaryIt = datadictionay.keySet().iterator();
-            while(dictionaryIt.hasNext()){
-                tablename = (String) dictionaryIt.next();
-                odsLoadTask = getODSLoadTask(jsonConfig, tablename);
+            odsTasks = (JSONArray) jsonConfig.get("ods-load-tasks");
+            taskIt = odsTasks.iterator();
+            while(taskIt.hasNext()){
+                task = (JSONObject) taskIt.next();
+                tablename = (String) task.get("table-name");
+                System.out.println("Loading "+tablename);
+                odsLoadTask = getODSLoadTask(jsonConfig,tablename);
                 strategy = (String) odsLoadTask.get("strategy");
                 odsLoadSQL = (String) odsLoadTask.get("sql");
+                //System.out.println("SQL "+odsLoadSQL);
                 table = (ArrayList) datadictionay.get(tablename);
                 if(strategy.equalsIgnoreCase("FULL_LOAD")) {
                     createODSTable(con, table, tablename);
                     stmt.executeUpdate(odsLoadSQL);
                 }
-                validate(validatorlog, con, table,tablename);
+               // validate(validatorlog, con, table,tablename);
             }
         }finally {
             if(validatorlog != null) validatorlog.close();
@@ -274,7 +382,7 @@ public class ETLManager {
         buff.append("field_name varchar(50),");
         buff.append("description varchar(100),");
         buff.append("data_type varchar(25),");
-        buff.append("char_length varchar(2),");
+        buff.append("char_length varchar(5),");
         buff.append("acceptable_value varchar(25),");
         buff.append("field_required varchar(2),");
         buff.append("accept_null_value varchar(2)");
